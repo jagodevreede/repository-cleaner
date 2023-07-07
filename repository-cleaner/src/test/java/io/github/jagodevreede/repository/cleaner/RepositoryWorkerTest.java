@@ -33,12 +33,11 @@ class RepositoryWorkerTest {
     @Test
     void findOldFolders_and_size() throws Exception {
         RepositoryWorker worker = new RepositoryWorker(userM2Repo, log);
-        List<RepositoryWorker.FolderAndLastAccessTime> oldFolders = worker.findOldFolders(1);
+        List<RepositoryWorker.FolderAndLastAccessTime> oldFolders = worker.findOldFolders(0);
         long cleanupSize = worker.getCleanupSize(oldFolders);
 
         assertThat(oldFolders).hasSizeGreaterThan(0);
         assertThat(cleanupSize).isGreaterThan(0);
     }
-
 
 }
