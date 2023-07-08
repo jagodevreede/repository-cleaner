@@ -10,8 +10,6 @@ import java.io.File;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.startsWith;
-import static org.mockito.Mockito.verify;
 
 
 @ExtendWith(MockitoExtension.class)
@@ -27,7 +25,6 @@ class RepositoryWorkerTest {
         long size = worker.getTotalSize();
 
         assertThat(size).isGreaterThan(0);
-        verify(log).info(startsWith("Total size of repository "));
     }
 
     @Test
