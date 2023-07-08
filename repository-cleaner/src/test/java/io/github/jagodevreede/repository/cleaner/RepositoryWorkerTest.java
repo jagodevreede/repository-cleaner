@@ -24,7 +24,7 @@ class RepositoryWorkerTest {
     @Test
     void totalSize() throws Exception {
         RepositoryWorker worker = new RepositoryWorker(userM2Repo, log);
-        long size = worker.totalSize();
+        long size = worker.getTotalSize();
 
         assertThat(size).isGreaterThan(0);
         verify(log).info(startsWith("Total size of repository "));
@@ -33,11 +33,22 @@ class RepositoryWorkerTest {
     @Test
     void findOldFolders_and_size() throws Exception {
         RepositoryWorker worker = new RepositoryWorker(userM2Repo, log);
-        List<RepositoryWorker.FolderAndLastAccessTime> oldFolders = worker.findOldFolders(0);
+        List<RepositoryWorker.FolderAndLastAccessTime> oldFolders = worker.findOldFolders(0, false);
         long cleanupSize = worker.getCleanupSize(oldFolders);
 
         assertThat(oldFolders).hasSizeGreaterThan(0);
         assertThat(cleanupSize).isGreaterThan(0);
     }
 
+    @Test
+    void findOldFolders_and_size_withSnapshot() throws Exception {
+        RepositoryWorker worker = new RepositoryWorker(userM2Repo, log);
+        List<RepositoryWorker.FolderAndLastAccessTime> oldFolders = worker.findOldFolders(0, true);
+        long cleanupSize = worker.getCleanupSize(oldFolders);
+
+        assertThat(oldFolders).hasSizeGreaterThan(0)
+                        .allMatch(f -> f.getFolder().getAbsolutePath().contains("-SNAPSHOT"));
+
+        assertThat(cleanupSize).isGreaterThan(0);
+    }
 }

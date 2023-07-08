@@ -1,5 +1,6 @@
 package io.github.jagodevreede.repository.cleaner;
 
+import io.github.jagodevreede.repository.cleaner.util.SizeUnitSI;
 import org.apache.maven.plugin.logging.Log;
 
 import java.io.File;
@@ -11,32 +12,40 @@ import java.util.List;
 
 public class RepositoryWorker {
     private final Log log;
+
+    private final File repositoryLocation;
     private final List<FolderAndLastAccessTime> deepestFolders = new ArrayList<>();
 
     public RepositoryWorker(String repositoryLocation, Log log) throws HaltException {
-        File repositoryLocation1 = new File(repositoryLocation);
+        this.repositoryLocation = new File(repositoryLocation);
         this.log = log;
-        if (!repositoryLocation1.exists()) {
+        if (!this.repositoryLocation.exists()) {
             throw new HaltException("Repository location " + repositoryLocation + " does not exist");
         }
         log.info("Analyzing repository " + repositoryLocation);
-        determineDeepestFolder(repositoryLocation1);
+        init();
     }
 
-    public long totalSize() {
+    public void init() {
+        deepestFolders.clear();
+        determineDeepestFolder(repositoryLocation);
+    }
+
+    public long getTotalSize() {
         long totalSize = 0;
         for (FolderAndLastAccessTime folderAndLastAccessTime : deepestFolders) {
             totalSize += folderAndLastAccessTime.sizeBytes;
         }
-        log.info("Total size of repository " + SizeUnitSIPrefixes.toHumanReadable(totalSize));
         return totalSize;
     }
 
-    public List<FolderAndLastAccessTime> findOldFolders(long days) {
+    public List<FolderAndLastAccessTime> findOldFolders(long days, boolean snapshotOnly) {
         List<FolderAndLastAccessTime> oldFolders = new ArrayList<>();
         for (FolderAndLastAccessTime folderAndLastAccessTime : deepestFolders) {
             if (folderAndLastAccessTime.lastAccessTime < System.currentTimeMillis() - days * 24 * 60 * 60 * 1000) {
-                oldFolders.add(folderAndLastAccessTime);
+                if (!snapshotOnly || folderAndLastAccessTime.folder.getName().contains("-SNAPSHOT")) {
+                    oldFolders.add(folderAndLastAccessTime);
+                }
             }
         }
         return oldFolders;
@@ -47,7 +56,7 @@ public class RepositoryWorker {
         for (FolderAndLastAccessTime folderAndLastAccessTime : oldFolders) {
             cleanupSize += folderAndLastAccessTime.sizeBytes;
         }
-        log.info("Total cleanup size " + SizeUnitSIPrefixes.toHumanReadable(cleanupSize));
+        log.info("Total cleanup size " + SizeUnitSI.toHumanReadable(cleanupSize));
         return cleanupSize;
     }
 
@@ -73,27 +82,12 @@ public class RepositoryWorker {
                     }
                     folderSizeBytes += attr.size();
                 } catch (IOException e) {
-                    log.info("Unable to get file attributes for " + file.getName() + " skipping");
+                    log.info("Unable to get file attributes for " + file.getAbsolutePath() + " skipping");
                 }
             }
         }
         if (!hasSubFolders) {
             deepestFolders.add(new FolderAndLastAccessTime(startPoint, lastAccessTime, folderSizeBytes));
-        }
-    }
-
-    public void delete(List<FolderAndLastAccessTime> oldFolders) {
-        for (FolderAndLastAccessTime folder : oldFolders) {
-            File folderToDelete = folder.folder;
-            log.info("Deleting " + folderToDelete.getName() + " (" + SizeUnitSIPrefixes.toHumanReadable(folder.sizeBytes) + ")");
-            for (File file : folderToDelete.listFiles()) {
-                if (!file.delete()) {
-                    log.warn("Unable to delete " + file.getName());
-                }
-            }
-            if (!folderToDelete.delete()) {
-                log.warn("Unable to delete " + folderToDelete.getName());
-            }
         }
     }
 
@@ -106,6 +100,18 @@ public class RepositoryWorker {
             this.folder = folder;
             this.lastAccessTime = lastAccessTime;
             this.sizeBytes = sizeBytes;
+        }
+
+        public File getFolder() {
+            return folder;
+        }
+
+        public long getLastAccessTime() {
+            return lastAccessTime;
+        }
+
+        public long getSizeBytes() {
+            return sizeBytes;
         }
     }
 }

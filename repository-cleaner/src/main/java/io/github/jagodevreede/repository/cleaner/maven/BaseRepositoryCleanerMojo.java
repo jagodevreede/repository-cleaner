@@ -1,22 +1,16 @@
 package io.github.jagodevreede.repository.cleaner.maven;
 
 import io.github.jagodevreede.repository.cleaner.RepositoryWorker;
-import org.apache.maven.artifact.metadata.ArtifactMetadataSource;
+import io.github.jagodevreede.repository.cleaner.util.SizeUnitSI;
 import org.apache.maven.artifact.repository.ArtifactRepository;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
-import org.apache.maven.plugins.annotations.LifecyclePhase;
-import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
-import org.apache.maven.plugins.annotations.ResolutionScope;
 import org.apache.maven.project.MavenProject;
-import org.apache.maven.repository.RepositorySystem;
 
-import javax.inject.Inject;
 import java.util.List;
 
-@Mojo(name = "clean", defaultPhase = LifecyclePhase.VALIDATE, threadSafe = true, requiresDependencyResolution = ResolutionScope.COMPILE)
-public class RepositoryCleanerMojo extends AbstractMojo {
+abstract class BaseRepositoryCleanerMojo extends AbstractMojo {
 
     @Parameter(defaultValue = "${project}", readonly = true)
     MavenProject project;
@@ -24,8 +18,8 @@ public class RepositoryCleanerMojo extends AbstractMojo {
     @Parameter(property = "daysToKeep", defaultValue = "365", readonly = true)
     int daysToKeep;
 
-    @Parameter(property = "clean.dryRun", defaultValue = "false", readonly = true)
-    boolean dryRun;
+    @Parameter(property = "clean.snapshotOnly", defaultValue = "false", readonly = true)
+    boolean snapshotOnly;
 
     @Parameter(defaultValue = "${localRepository}", readonly = true)
     ArtifactRepository localRepository;
@@ -37,13 +31,12 @@ public class RepositoryCleanerMojo extends AbstractMojo {
         }
         getLog().info("Analyzing with " + daysToKeep + " days to keep... " + localRepository.getBasedir());
         RepositoryWorker worker = new RepositoryWorker(localRepository.getBasedir(), getLog());
-        List<RepositoryWorker.FolderAndLastAccessTime> oldFolders = worker.findOldFolders(daysToKeep);
+        List<RepositoryWorker.FolderAndLastAccessTime> oldFolders = worker.findOldFolders(daysToKeep, snapshotOnly);
         worker.getCleanupSize(oldFolders);
-        if (dryRun) {
-            getLog().info("Not actual deleting, as this is a dry run");
-        } else {
-            worker.delete(oldFolders);
-        }
+        long totalSize = worker.getTotalSize();
+        getLog().info("Total size of repository after cleaning " + SizeUnitSI.toHumanReadable(totalSize));
+        executeAction(worker, oldFolders);
     }
 
+    abstract void executeAction(RepositoryWorker worker, List<RepositoryWorker.FolderAndLastAccessTime> oldFolders);
 }

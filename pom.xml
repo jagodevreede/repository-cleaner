@@ -9,7 +9,7 @@
     <name>Repository cleaner root</name>
     <url>https://github.com/jagodevreede/repository-cleaner</url>
     <description>This is the root pom for the repository-cleaner maven plugin</description>
-    <inceptionYear>2022</inceptionYear>
+    <inceptionYear>2023</inceptionYear>
 
     <licenses>
         <license>
