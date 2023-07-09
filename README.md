@@ -22,6 +22,8 @@ This plugin requires Maven 3.3.9 and Java 11 or higher to be able to run.
 
 ## Usage
 
+You will need to run this plugin from within a maven project.
+
 This plugin provides two goals: `analyze` and `clean`. You can use the following parameters to customize the behavior:
 
 | Name               | Default value | Description                                                                                                                         |
