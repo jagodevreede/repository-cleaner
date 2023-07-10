@@ -16,13 +16,18 @@ public class RepositoryCleanerCleanerMojo extends BaseRepositoryCleanerMojo {
 
     @Override
     void executeAction(RepositoryWorker worker, List<RepositoryWorker.FolderAndLastAccessTime> oldFolders) {
+        long cleanupSize = worker.getCleanupSize(oldFolders);
         if (dryRun) {
             getLog().info("Not actual deleting, as this is a dry run");
+            getLog().info("Would have cleaned " + SizeUnitSI.toHumanReadable(cleanupSize));
         } else {
+            long beforeSize = worker.getTotalSize();
             delete(oldFolders);
             worker.init();
             long totalSize = worker.getTotalSize();
+            getLog().info("Total size of repository before cleaning " + SizeUnitSI.toHumanReadable(beforeSize));
             getLog().info("Total size of repository after cleaning " + SizeUnitSI.toHumanReadable(totalSize));
+            getLog().info("Cleaned " + SizeUnitSI.toHumanReadable(cleanupSize));
         }
     }
 

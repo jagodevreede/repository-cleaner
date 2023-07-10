@@ -1,7 +1,6 @@
 package io.github.jagodevreede.repository.cleaner.maven;
 
 import io.github.jagodevreede.repository.cleaner.RepositoryWorker;
-import io.github.jagodevreede.repository.cleaner.util.SizeUnitSI;
 import org.apache.maven.artifact.repository.ArtifactRepository;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
@@ -32,9 +31,10 @@ abstract class BaseRepositoryCleanerMojo extends AbstractMojo {
         getLog().info("Analyzing with " + daysToKeep + " days to keep... " + localRepository.getBasedir());
         RepositoryWorker worker = new RepositoryWorker(localRepository.getBasedir(), getLog());
         List<RepositoryWorker.FolderAndLastAccessTime> oldFolders = worker.findOldFolders(daysToKeep, snapshotOnly);
-        worker.getCleanupSize(oldFolders);
-        long totalSize = worker.getTotalSize();
-        getLog().info("Total size of repository after cleaning " + SizeUnitSI.toHumanReadable(totalSize));
+        if (oldFolders.isEmpty()) {
+            getLog().info("Found nothing to clean");
+            return;
+        }
         executeAction(worker, oldFolders);
     }
 
